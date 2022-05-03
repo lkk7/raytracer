@@ -15,8 +15,8 @@ set(SOURCES
     )
 set(HEADERS
     "${SRC_DIR}/camera.hpp"
-    "${SRC_DIR}/color.hpp"
     "${SRC_DIR}/material.hpp"
+    "${SRC_DIR}/output.hpp"
     "${SRC_DIR}/ray.hpp"
     "${SRC_DIR}/sceneobject.hpp"
     "${SRC_DIR}/sphere.hpp"

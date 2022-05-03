@@ -1,5 +1,5 @@
-#ifndef COLOR_HPP
-#define COLOR_HPP
+#ifndef OUTPUT_HPP
+#define OUTPUT_HPP
 
 #include <algorithm>
 #include <iostream>

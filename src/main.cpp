@@ -4,26 +4,12 @@
 #include <thread>
 
 #include "camera.hpp"
-#include "color.hpp"
 #include "material.hpp"
+#include "output.hpp"
 #include "ray.hpp"
 #include "sceneobject.hpp"
 #include "sphere.hpp"
-#include "utils.hpp"
 #include "vector3d.hpp"
-
-double hit_sphere(const Point3D& center, double radius, const Ray& ray) {
-  Vector3D center_to_point = ray.origin - center;
-  const double a = ray.direction.length_squared(),
-               half_b = dot_product(center_to_point, ray.direction),
-               c = center_to_point.length_squared() - radius * radius,
-               delta = half_b * half_b - a * c;
-  if (delta < 0) {
-    return -1.0;
-  } else {
-    return -half_b - std::sqrt(delta) / a;
-  }
-}
 
 ColorRGB ray_color(const Ray& ray, const SceneObjectList& world, int depth) {
   if (depth <= 0) return ColorRGB{0.0, 0.0, 0.0};
@@ -43,9 +29,19 @@ ColorRGB ray_color(const Ray& ray, const SceneObjectList& world, int depth) {
 SceneObjectList random_scene() {
   SceneObjectList world{};
 
-  auto ground_material = std::make_shared<Lambertian>(ColorRGB{0.5, 0.5, 0.5});
+  auto ground_material = std::make_unique<Lambertian>(ColorRGB{0.5, 0.5, 0.5});
+  world.add(std::make_unique<Sphere>(Point3D{0, -1000, 0}, 1000,
+                                     std::move(ground_material)));
+
+  auto material1 = std::make_unique<Dielectric>(1.5);
+  auto material2 = std::make_unique<Lambertian>(ColorRGB{0.4, 0.2, 0.1});
+  auto material3 = std::make_unique<Metal>(ColorRGB{0.7, 0.6, 0.5}, 0.0);
   world.add(
-      std::make_shared<Sphere>(Point3D{0, -1000, 0}, 1000, ground_material));
+      std::make_unique<Sphere>(Point3D{0, 1, 0}, 1.0, std::move(material1)));
+  world.add(
+      std::make_unique<Sphere>(Point3D{-4, 1, 0}, 1.0, std::move(material2)));
+  world.add(
+      std::make_unique<Sphere>(Point3D{4, 1, 0}, 1.0, std::move(material3)));
 
   for (int a = -11; a < 11; a++) {
     for (int b = -11; b < 11; b++) {
@@ -53,34 +49,29 @@ SceneObjectList random_scene() {
       Point3D center{a + 0.9 * random_double(), 0.2, b + 0.9 * random_double()};
 
       if ((center - Point3D{4, 0.2, 0}).length() > 0.9) {
-        std::shared_ptr<Material> sphere_material;
+        std::unique_ptr<Material> sphere_material;
         if (choose_material < 0.8) {
           // Lambertian (diffuse/matte)
           auto albedo = random_vector() * random_vector();
-          sphere_material = std::make_shared<Lambertian>(albedo);
-          world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+          sphere_material = std::make_unique<Lambertian>(albedo);
+          world.add(std::make_unique<Sphere>(center, 0.2,
+                                             std::move(sphere_material)));
         } else if (choose_material < 0.95) {
           // Metal
           Vector3D albedo = random_vector(0.5, 1);
           double fuzz = random_double(0, 0.5);
-          sphere_material = std::make_shared<Metal>(albedo, fuzz);
-          world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+          sphere_material = std::make_unique<Metal>(albedo, fuzz);
+          world.add(std::make_unique<Sphere>(center, 0.2,
+                                             std::move(sphere_material)));
         } else {
           // Dielectric (glass)
-          sphere_material = std::make_shared<Dielectric>(1.5);
-          world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+          sphere_material = std::make_unique<Dielectric>(1.5);
+          world.add(std::make_unique<Sphere>(center, 0.2,
+                                             std::move(sphere_material)));
         }
       }
     }
   }
-  auto material1 = std::make_shared<Dielectric>(1.5);
-  world.add(std::make_shared<Sphere>(Point3D{0, 1, 0}, 1.0, material1));
-
-  auto material2 = std::make_shared<Lambertian>(ColorRGB{0.4, 0.2, 0.1});
-  world.add(std::make_shared<Sphere>(Point3D{-4, 1, 0}, 1.0, material2));
-
-  auto material3 = std::make_shared<Metal>(ColorRGB{0.7, 0.6, 0.5}, 0.0);
-  world.add(std::make_shared<Sphere>(Point3D{4, 1, 0}, 1.0, material3));
 
   return world;
 }

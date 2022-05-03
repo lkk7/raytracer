@@ -32,12 +32,13 @@ class SceneObject {
 class SceneObjectList {
  public:
   SceneObjectList() = default;
-  SceneObjectList(std::shared_ptr<SceneObject> object) { add(object); }
   void clear() { objects.clear(); }
-  void add(std::shared_ptr<SceneObject> object) { objects.push_back(object); }
+  void add(std::unique_ptr<SceneObject>&& object) {
+    objects.emplace_back(std::move(object));
+  }
   virtual bool hit(const Ray& ray, double t_min, double t_max,
                    HitRecord& rec) const;
-  std::vector<std::shared_ptr<SceneObject>> objects;
+  std::vector<std::unique_ptr<SceneObject>> objects;
 };
 
 #endif
