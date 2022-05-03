@@ -1,6 +1,7 @@
 #ifndef VECTOR3D_HPP
 #define VECTOR3D_HPP
 
+#include <array>
 #include <cmath>
 #include <iostream>
 
@@ -12,8 +13,8 @@ class Vector3D {
   Vector3D(double x, double y, double z) : data{x, y, z} {}
 
   Vector3D operator-() const { return Vector3D(-data[0], -data[1], -data[2]); }
-  double operator[](int i) const { return data[i]; }
-  double &operator[](int i) { return data[i]; }
+  double operator[](int i) const { return data.at(i); }
+  double &operator[](int i) { return data.at(i); }
   Vector3D &operator+=(const Vector3D &other) {
     data[0] += other.data[0];
     data[1] += other.data[1];
@@ -28,18 +29,18 @@ class Vector3D {
   }
   Vector3D &operator/=(double t) { return *this *= 1 / t; }
 
-  double length() const { return std::sqrt(length_squared()); }
-  double length_squared() const {
+  [[nodiscard]] double length() const { return std::sqrt(length_squared()); }
+  [[nodiscard]] double length_squared() const {
     return data[0] * data[0] + data[1] * data[1] + data[2] * data[2];
   }
 
-  bool near_zero() const {
+  [[nodiscard]] bool near_zero() const {
     const auto s = 1e-8;
     return (std::fabs(data[0]) < s) && (std::fabs(data[1]) < s) &&
            (std::fabs(data[2]) < s);
   }
 
-  double data[3];
+  std::array<double, 3> data;
 };
 
 inline Vector3D operator+(const Vector3D &v1, const Vector3D &v2) {
@@ -94,7 +95,9 @@ inline Vector3D random_vector(double min, double max) {
 inline Vector3D random_in_unit_sphere() {
   while (true) {
     Vector3D random = random_vector(-1.0, 1.0);
-    if (random.length_squared() >= 1) continue;
+    if (random.length_squared() >= 1) {
+      continue;
+    }
     return random;
   }
 }
@@ -106,7 +109,9 @@ inline Vector3D random_unit_vector() {
 inline Vector3D random_in_unit_disk() {
   while (true) {
     auto p = Vector3D{random_double(-1, 1), random_double(-1, 1), 0};
-    if (p.length_squared() >= 1) continue;
+    if (p.length_squared() >= 1) {
+      continue;
+    }
     return p;
   }
 }

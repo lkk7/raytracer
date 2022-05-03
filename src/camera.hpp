@@ -26,7 +26,7 @@ class Camera {
     lens_radius = aperture / 2;
   }
 
-  Ray get_ray(double s, double t) const {
+  [[nodiscard]] Ray get_ray(double s, double t) const {
     const Point3D random_point = lens_radius * random_in_unit_disk();
     const Point3D offset = u * random_point[0] + v * random_point[1];
     return Ray{origin + offset, lower_left_corner + s * horizontal +

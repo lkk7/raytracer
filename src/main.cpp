@@ -12,13 +12,16 @@
 #include "vector3d.hpp"
 
 ColorRGB ray_color(const Ray& ray, const SceneObjectList& world, int depth) {
-  if (depth <= 0) return ColorRGB{0.0, 0.0, 0.0};
+  if (depth <= 0) {
+    return ColorRGB{0.0, 0.0, 0.0};
+  }
   HitRecord record;
   if (world.hit(ray, 0.001, infinity, record)) {
     Ray scattered;
     ColorRGB attenuation;
-    if (record.material->scatter(ray, record, attenuation, scattered))
+    if (record.material->scatter(ray, record, attenuation, scattered)) {
       return attenuation * ray_color(scattered, world, depth - 1);
+    }
     return ColorRGB{0.0, 0.0, 0.0};
   }
   Vector3D unit_direction = unit_vector(ray.direction);
@@ -99,7 +102,7 @@ int main() {
   std::vector<std::array<ColorRGB, WIDTH>> result_data;
   result_data.reserve(HEIGHT);
 
-  int available_threads = std::thread::hardware_concurrency();
+  int available_threads = static_cast<int>(std::thread::hardware_concurrency());
   available_threads = std::clamp(available_threads, 1, HEIGHT);
   auto [rows_per_thread, rows_remainder] = std::div(HEIGHT, available_threads);
   std::cerr << "Starting with " << available_threads
@@ -128,7 +131,9 @@ int main() {
   for (int i = 0; i < available_threads; i++) {
     double from = i * rows_per_thread;
     double to = (i + 1) * rows_per_thread;
-    if (rows_remainder > 0) to += rows_remainder--;
+    if (rows_remainder > 0) {
+      to += rows_remainder--;
+    }
     std::thread work_thread{thread_workload, from, to};
     threads.emplace_back(std::move(work_thread));
   }

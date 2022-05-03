@@ -13,8 +13,8 @@ struct HitRecord {
   Point3D point;
   Vector3D normal;
   std::shared_ptr<Material> material;
-  double root;
-  bool front_face;
+  double root{};
+  bool front_face{};
 
   inline void set_face_normal(const Ray& ray, const Vector3D& outward_normal) {
     front_face = dot_product(ray.direction, outward_normal) < 0;
@@ -24,6 +24,11 @@ struct HitRecord {
 
 class SceneObject {
  public:
+  SceneObject() = default;
+  SceneObject(const SceneObject&) = default;
+  SceneObject(SceneObject&&) = default;
+  SceneObject& operator=(const SceneObject&) = default;
+  SceneObject& operator=(SceneObject&&) = default;
   virtual ~SceneObject() = default;
   virtual bool hit(const Ray& r, double t_min, double t_max,
                    HitRecord& rec) const = 0;

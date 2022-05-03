@@ -4,7 +4,9 @@ bool Lambertian::scatter([[maybe_unused]] const Ray& ray_in,
                          const HitRecord& rec, ColorRGB& attenuation,
                          Ray& scattered) const {
   Vector3D scatter_direction = rec.normal + random_unit_vector();
-  if (scatter_direction.near_zero()) scatter_direction = rec.normal;
+  if (scatter_direction.near_zero()) {
+    scatter_direction = rec.normal;
+  }
   scattered = Ray(rec.point, scatter_direction);
   attenuation = albedo;
   return true;
@@ -30,10 +32,11 @@ bool Dielectric::scatter(const Ray& ray_in, const HitRecord& rec,
   bool cannot_refract = refraction_ratio * sin_theta > 1.0;
   Vector3D direction;
   if (cannot_refract ||
-      reflectance(cos_theta, refraction_ratio) > random_double())
+      reflectance(cos_theta, refraction_ratio) > random_double()) {
     direction = reflect(unit_direction, rec.normal);
-  else
+  } else {
     direction = refract(unit_direction, rec.normal, refraction_ratio);
+  }
   scattered = Ray{rec.point, direction};
   return true;
 }
