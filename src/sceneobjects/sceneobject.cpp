@@ -1,5 +1,7 @@
 #include "sceneobject.hpp"
 
+namespace rt {
+
 bool SceneObjectList::hit(const Ray& ray, double t_min, double t_max,
                           HitRecord& record) const {
   HitRecord temp;
@@ -16,3 +18,5 @@ bool SceneObjectList::hit(const Ray& ray, double t_min, double t_max,
 
   return did_hit;
 }
+
+}  // namespace rt

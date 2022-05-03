@@ -3,23 +3,19 @@
 
 #include <limits>
 #include <numbers>
-#include <random>
 
-inline constexpr double infinity = std::numeric_limits<double>::infinity();
-inline constexpr double pi = std::numbers::pi;
+namespace rt {
 
-constexpr double degrees_to_radians(double degrees) {
-  return degrees * pi / 180.0;
-}
+inline constexpr double DOUBLE_INFINITY =
+    std::numeric_limits<double>::infinity();
+inline constexpr double PI = std::numbers::pi;
 
-inline double random_double() {
-  static std::mt19937 engine{std::random_device{}()};
-  static std::uniform_real_distribution distribution{0.0, 1.0};
-  return distribution(engine);
-}
+double degrees_to_radians(double degrees);
 
-inline double random_double(double min, double max) {
-  return min + (max - min) * random_double();
-}
+double random_double();
+
+double random_double(double min, double max);
+
+}  // namespace rt
 
 #endif

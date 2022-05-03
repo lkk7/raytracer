@@ -4,23 +4,10 @@
 #include <memory>
 #include <vector>
 
-#include "material.hpp"
+#include "hitrecord.hpp"
 #include "ray.hpp"
 
-class Material;
-
-struct HitRecord {
-  Point3D point;
-  Vector3D normal;
-  std::shared_ptr<Material> material;
-  double root{};
-  bool front_face{};
-
-  inline void set_face_normal(const Ray& ray, const Vector3D& outward_normal) {
-    front_face = dot_product(ray.direction, outward_normal) < 0;
-    normal = front_face ? outward_normal : -outward_normal;
-  }
-};
+namespace rt {
 
 class SceneObject {
  public:
@@ -45,5 +32,7 @@ class SceneObjectList {
                    HitRecord& rec) const;
   std::vector<std::unique_ptr<SceneObject>> objects;
 };
+
+}  // namespace rt
 
 #endif

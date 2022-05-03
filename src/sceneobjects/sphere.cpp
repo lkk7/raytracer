@@ -1,5 +1,7 @@
 #include "sphere.hpp"
 
+namespace rt {
+
 bool Sphere::hit(const Ray& ray, double t_min, double t_max,
                  HitRecord& record) const {
   Vector3D center_to_point{ray.origin - center};
@@ -22,8 +24,12 @@ bool Sphere::hit(const Ray& ray, double t_min, double t_max,
 
   record.root = root;
   record.point = ray.at(record.root);
-  record.set_face_normal(ray, (record.point - center) / radius);
+  const Vector3D outward_normal = (record.point - center) / radius;
+  record.front_face = dot_product(ray.direction, outward_normal) < 0;
+  record.normal = record.front_face ? outward_normal : -outward_normal;
   record.material = material;
 
   return true;
 }
+
+}  // namespace rt
