@@ -1,6 +1,8 @@
 #include <iostream>
 
+#include "camera.hpp"
 #include "color.hpp"
+#include "material.hpp"
 #include "ray.hpp"
 #include "sceneobject.hpp"
 #include "sphere.hpp"
@@ -9,10 +11,10 @@
 
 double hit_sphere(const Point3D& center, double radius, const Ray& ray) {
   Vector3D center_to_point = ray.origin - center;
-  double a = ray.direction.length_squared(),
-         half_b = dot_product(center_to_point, ray.direction),
-         c = center_to_point.length_squared() - radius * radius,
-         delta = half_b * half_b - a * c;
+  const double a = ray.direction.length_squared(),
+               half_b = dot_product(center_to_point, ray.direction),
+               c = center_to_point.length_squared() - radius * radius,
+               delta = half_b * half_b - a * c;
   if (delta < 0) {
     return -1.0;
   } else {
@@ -20,45 +22,96 @@ double hit_sphere(const Point3D& center, double radius, const Ray& ray) {
   }
 }
 
-ColorRGB ray_color(const Ray& ray, const SceneObjectList& world) {
+ColorRGB ray_color(const Ray& ray, const SceneObjectList& world, int depth) {
+  if (depth <= 0) return ColorRGB{0.0, 0.0, 0.0};
   HitRecord record;
-  if (world.hit(ray, 0, infinity, record)) {
-    return 0.5 * (record.normal + ColorRGB{1, 1, 1});
+  if (world.hit(ray, 0.001, infinity, record)) {
+    Ray scattered;
+    ColorRGB attenuation;
+    if (record.material->scatter(ray, record, attenuation, scattered))
+      return attenuation * ray_color(scattered, world, depth - 1);
+    return ColorRGB{0.0, 0.0, 0.0};
   }
   Vector3D unit_direction = unit_vector(ray.direction);
-  // Scale from (-1, 1) to (0, 1)
-  double t = 0.5 * (unit_direction[1] + 1.0);
+  const double t = 0.5 * (unit_direction[1] + 1.0);
   return (1.0 - t) * ColorRGB{1.0, 1.0, 1.0} + t * ColorRGB{0.5, 0.7, 1.0};
 }
 
-int main() {
-  constexpr double ASPECT_RATIO = 16.0 / 9.0;
-  constexpr int WIDTH = 400;
-  constexpr int HEIGHT = static_cast<int>(WIDTH / ASPECT_RATIO);
-
-  constexpr double VIEWPORT_HEIGHT = 2.0;
-  constexpr double VIEWPORT_WIDTH = ASPECT_RATIO * VIEWPORT_HEIGHT;
-  constexpr double FOCAL_LENGTH = 1.0;
-  Point3D origin = Point3D{0, 0, 0};
-  Vector3D horizontal = Point3D{VIEWPORT_WIDTH, 0, 0};
-  Vector3D vertical = Point3D{0, VIEWPORT_HEIGHT, 0};
-  Point3D lower_left_corner =
-      origin - horizontal / 2 - vertical / 2 - Point3D(0, 0, FOCAL_LENGTH);
-
+SceneObjectList random_scene() {
   SceneObjectList world{};
-  world.add(std::make_shared<Sphere>(Point3D{0, 0, -1}, 0.5));
-  world.add(std::make_shared<Sphere>(Point3D{0, -100.5, -1}, 100));
+
+  auto ground_material = std::make_shared<Lambertian>(ColorRGB{0.5, 0.5, 0.5});
+  world.add(
+      std::make_shared<Sphere>(Point3D{0, -1000, 0}, 1000, ground_material));
+
+  for (int a = -11; a < 11; a++) {
+    for (int b = -11; b < 11; b++) {
+      double choose_material = random_double();
+      Point3D center{a + 0.9 * random_double(), 0.2, b + 0.9 * random_double()};
+
+      if ((center - Point3D{4, 0.2, 0}).length() > 0.9) {
+        std::shared_ptr<Material> sphere_material;
+        if (choose_material < 0.8) {
+          // Lambertian (diffuse/matte)
+          auto albedo = random_vector() * random_vector();
+          sphere_material = std::make_shared<Lambertian>(albedo);
+          world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+        } else if (choose_material < 0.95) {
+          // Metal
+          Vector3D albedo = random_vector(0.5, 1);
+          double fuzz = random_double(0, 0.5);
+          sphere_material = std::make_shared<Metal>(albedo, fuzz);
+          world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+        } else {
+          // Dielectric (glass)
+          sphere_material = std::make_shared<Dielectric>(1.5);
+          world.add(make_shared<Sphere>(center, 0.2, sphere_material));
+        }
+      }
+    }
+  }
+  auto material1 = std::make_shared<Dielectric>(1.5);
+  world.add(std::make_shared<Sphere>(Point3D{0, 1, 0}, 1.0, material1));
+
+  auto material2 = std::make_shared<Lambertian>(ColorRGB{0.4, 0.2, 0.1});
+  world.add(std::make_shared<Sphere>(Point3D{-4, 1, 0}, 1.0, material2));
+
+  auto material3 = std::make_shared<Metal>(ColorRGB{0.7, 0.6, 0.5}, 0.0);
+  world.add(std::make_shared<Sphere>(Point3D{4, 1, 0}, 1.0, material3));
+
+  return world;
+}
+
+int main() {
+  constexpr double ASPECT_RATIO = 3.0 / 2.0;
+  constexpr int WIDTH = 1200;
+  constexpr int HEIGHT = static_cast<int>(WIDTH / ASPECT_RATIO);
+  constexpr int SAMPLES_PER_PIXEL = 500;
+  constexpr int MAX_DEPTH = 50;
+
+  SceneObjectList world = random_scene();
+
+  const Point3D from{13, 2, 3};
+  const Point3D to{0, 0, 0};
+  const Vector3D vector_up{0, 1, 0};
+  const double vertical_field_of_view = 20.0;
+  const double focus_distance = 10.0;
+  const double aperture = 0.1;
+  Camera camera{from,         to,       vector_up,     vertical_field_of_view,
+                ASPECT_RATIO, aperture, focus_distance};
 
   std::cout << "P3\n" << WIDTH << ' ' << HEIGHT << "\n255\n";
   for (int j = HEIGHT - 1; j >= 0; j--) {
     std::cerr << "Lines left: " << j << '\n';
     for (int i = 0; i < WIDTH; i++) {
-      auto u = double(i) / (WIDTH - 1);
-      auto v = double(j) / (HEIGHT - 1);
-      Ray ray{origin,
-              lower_left_corner + u * horizontal + v * vertical - origin};
-      ColorRGB pixel = ray_color(ray, world);
-      output_color(std::cout, pixel);
+      ColorRGB color{0.0, 0.0, 0.0};
+      for (int s = 0; s < SAMPLES_PER_PIXEL; s++) {
+        const double u = (i + random_double()) / (WIDTH - 1);
+        const double v = (j + random_double()) / (HEIGHT - 1);
+        Ray ray{camera.get_ray(u, v)};
+        color += ray_color(ray, world, MAX_DEPTH);
+      }
+      output_color(std::cout, color, SAMPLES_PER_PIXEL);
     }
   }
   std::cerr << "Success\n";

@@ -9,11 +9,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -O2 -fPIC")
 set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(SOURCES
     "${SRC_DIR}/main.cpp"
+    "${SRC_DIR}/material.cpp"
     "${SRC_DIR}/sceneobject.cpp"
     "${SRC_DIR}/sphere.cpp"
     )
 set(HEADERS
+    "${SRC_DIR}/camera.hpp"
     "${SRC_DIR}/color.hpp"
+    "${SRC_DIR}/material.hpp"
     "${SRC_DIR}/ray.hpp"
     "${SRC_DIR}/sceneobject.hpp"
     "${SRC_DIR}/sphere.hpp"

@@ -4,11 +4,15 @@
 #include <memory>
 #include <vector>
 
+#include "material.hpp"
 #include "ray.hpp"
+
+class Material;
 
 struct HitRecord {
   Point3D point;
   Vector3D normal;
+  std::shared_ptr<Material> material;
   double root;
   bool front_face;
 
@@ -20,6 +24,7 @@ struct HitRecord {
 
 class SceneObject {
  public:
+  virtual ~SceneObject() = default;
   virtual bool hit(const Ray& r, double t_min, double t_max,
                    HitRecord& rec) const = 0;
 };

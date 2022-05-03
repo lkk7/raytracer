@@ -4,9 +4,11 @@
 #include <cmath>
 #include <iostream>
 
+#include "utils.hpp"
+
 class Vector3D {
  public:
-  Vector3D() : data{0, 0, 0} {}
+  Vector3D() : data{0.0, 0.0, 0.0} {}
   Vector3D(double x, double y, double z) : data{x, y, z} {}
 
   Vector3D operator-() const { return Vector3D(-data[0], -data[1], -data[2]); }
@@ -29,6 +31,12 @@ class Vector3D {
   double length() const { return std::sqrt(length_squared()); }
   double length_squared() const {
     return data[0] * data[0] + data[1] * data[1] + data[2] * data[2];
+  }
+
+  bool near_zero() const {
+    const auto s = 1e-8;
+    return (std::fabs(data[0]) < s) && (std::fabs(data[1]) < s) &&
+           (std::fabs(data[2]) < s);
   }
 
   double data[3];
@@ -73,6 +81,48 @@ inline Vector3D cross_product(const Vector3D &v1, const Vector3D &v2) {
 }
 
 inline Vector3D unit_vector(Vector3D v) { return v / v.length(); }
+
+inline Vector3D random_vector() {
+  return Vector3D{random_double(), random_double(), random_double()};
+}
+
+inline Vector3D random_vector(double min, double max) {
+  return Vector3D{random_double(min, max), random_double(min, max),
+                  random_double(min, max)};
+}
+
+inline Vector3D random_in_unit_sphere() {
+  while (true) {
+    Vector3D random = random_vector(-1.0, 1.0);
+    if (random.length_squared() >= 1) continue;
+    return random;
+  }
+}
+
+inline Vector3D random_unit_vector() {
+  return unit_vector(random_in_unit_sphere());
+}
+
+inline Vector3D random_in_unit_disk() {
+  while (true) {
+    auto p = Vector3D{random_double(-1, 1), random_double(-1, 1), 0};
+    if (p.length_squared() >= 1) continue;
+    return p;
+  }
+}
+
+inline Vector3D reflect(const Vector3D &v, const Vector3D &normal) {
+  return v - 2 * dot_product(v, normal) * normal;
+}
+
+inline Vector3D refract(const Vector3D &vector, const Vector3D &normal,
+                        double coefficient) {
+  double cos_theta = std::fmin(dot_product(-vector, normal), 1.0);
+  Vector3D perpendicular = coefficient * (vector + cos_theta * normal);
+  Vector3D parallel =
+      -std::sqrt(std::fabs(1.0 - perpendicular.length_squared())) * normal;
+  return perpendicular + parallel;
+}
 
 using Point3D = Vector3D;
 using ColorRGB = Vector3D;
