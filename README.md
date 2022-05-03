@@ -1,12 +1,12 @@
 # Raytracer ![language](https://img.shields.io/badge/standard-C++20-blue.svg)
 
-A raytracer from the great book [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html). But it's refactored a lot.
+A raytracer from the great book [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html), but it's refactored. Added multithreading, changed naming and file structure, fixed some issues that `clang-tidy` detected.
 
 ## Example results
 
-![Book example](https://raw.githubusercontent.com/lkk7/raytracer/main/imgs/book.ppm)
-![A darker example](https://raw.githubusercontent.com/lkk7/raytracer/main/imgs/dark.ppm)
-![A pink example](https://raw.githubusercontent.com/lkk7/raytracer/main/imgs/pink.ppm)
+![Book example](https://raw.githubusercontent.com/lkk7/raytracer/main/imgs/book.png)
+![A pink example](https://raw.githubusercontent.com/lkk7/raytracer/main/imgs/pink.png)
+![A darker example](https://raw.githubusercontent.com/lkk7/raytracer/main/imgs/dark.png)
 
 ## Installation and usage
 
