@@ -1,4 +1,7 @@
+#include <algorithm>
+#include <array>
 #include <iostream>
+#include <thread>
 
 #include "camera.hpp"
 #include "color.hpp"
@@ -84,9 +87,9 @@ SceneObjectList random_scene() {
 
 int main() {
   constexpr double ASPECT_RATIO = 3.0 / 2.0;
-  constexpr int WIDTH = 1200;
+  constexpr int WIDTH = 400;
   constexpr int HEIGHT = static_cast<int>(WIDTH / ASPECT_RATIO);
-  constexpr int SAMPLES_PER_PIXEL = 500;
+  constexpr int SAMPLES_PER_PIXEL = 100;
   constexpr int MAX_DEPTH = 50;
 
   SceneObjectList world = random_scene();
@@ -97,22 +100,57 @@ int main() {
   const double vertical_field_of_view = 20.0;
   const double focus_distance = 10.0;
   const double aperture = 0.1;
-  Camera camera{from,         to,       vector_up,     vertical_field_of_view,
-                ASPECT_RATIO, aperture, focus_distance};
+  const Camera camera{
+      from,         to,       vector_up,     vertical_field_of_view,
+      ASPECT_RATIO, aperture, focus_distance};
+
+  // std::vector to allocate elements on heap
+  std::vector<std::array<ColorRGB, WIDTH>> result_data;
+  result_data.reserve(HEIGHT);
+
+  int available_threads = std::thread::hardware_concurrency();
+  available_threads = std::clamp(available_threads, 1, HEIGHT);
+  auto [rows_per_thread, rows_remainder] = std::div(HEIGHT, available_threads);
+  std::cerr << "Starting with " << available_threads
+            << " concurrent thread(s). " << rows_per_thread
+            << " rows per thread, remainder: " << rows_remainder
+            << " rows split evenly across threads \n";
+
+  auto thread_workload = [&world = std::as_const(world),
+                          &camera = std::as_const(camera),
+                          &result_data](int row_start, int row_end) {
+    for (int j = row_start; j < row_end; j++) {
+      for (int i = 0; i < WIDTH; i++) {
+        ColorRGB color{0.0, 0.0, 0.0};
+        for (int s = 0; s < SAMPLES_PER_PIXEL; s++) {
+          const double u = (i + random_double()) / (WIDTH - 1);
+          const double v = (j + random_double()) / (HEIGHT - 1);
+          Ray ray{camera.get_ray(u, v)};
+          color += ray_color(ray, world, MAX_DEPTH);
+        }
+        result_data[j][i] = color;
+      }
+    }
+  };
+
+  std::vector<std::thread> threads;
+  for (int i = 0; i < available_threads; i++) {
+    double from = i * rows_per_thread;
+    double to = (i + 1) * rows_per_thread;
+    if (rows_remainder > 0) to += rows_remainder--;
+    std::thread work_thread{thread_workload, from, to};
+    threads.emplace_back(std::move(work_thread));
+  }
+
+  for (auto& thread : threads) {
+    thread.join();
+  }
 
   std::cout << "P3\n" << WIDTH << ' ' << HEIGHT << "\n255\n";
   for (int j = HEIGHT - 1; j >= 0; j--) {
-    std::cerr << "Lines left: " << j << '\n';
     for (int i = 0; i < WIDTH; i++) {
-      ColorRGB color{0.0, 0.0, 0.0};
-      for (int s = 0; s < SAMPLES_PER_PIXEL; s++) {
-        const double u = (i + random_double()) / (WIDTH - 1);
-        const double v = (j + random_double()) / (HEIGHT - 1);
-        Ray ray{camera.get_ray(u, v)};
-        color += ray_color(ray, world, MAX_DEPTH);
-      }
-      output_color(std::cout, color, SAMPLES_PER_PIXEL);
+      output_color(std::cout, result_data[j][i], SAMPLES_PER_PIXEL);
     }
   }
-  std::cerr << "Success\n";
+  std::cerr << "\nSuccess\n";
 }
